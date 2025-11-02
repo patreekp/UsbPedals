@@ -1,85 +1,54 @@
 #include <Joystick.h>
 
-// NOTE: This file is for use with Arduino Leonardo and  Arduino Micro only.
-//       Arduino Micro only.
-//
-// To get this program to work you need MHeironimus GPLv3 joystick libary from
-// https://github.com/MHeironimus/ArduinoJoystickLibrary version-1.0
-//
+/*
+  Pedal Board Controller for Arduino Leonardo / Micro
+  ---------------------------------------------------
+  Uses MHeironimus' Arduino Joystick Library (GPLv3)
+  https://github.com/MHeironimus/ArduinoJoystickLibrary
 
-// Variable
-int gas = A5;
-int brake = A3; 
-int clutch = A4;
+  Reads three analog pedals (throttle, brake, clutch)
+  and maps them to joystick axes.
+*/
 
-int gasValue = 0;
-int gasValuebyte = 0;
+// === Pin Configuration ===
+constexpr int PIN_GAS    = A5;
+constexpr int PIN_BRAKE  = A3;
+constexpr int PIN_CLUTCH = A4;
 
-int brakeValue = 0;
-int brakeValuebyte1 = 0;
-int brakeValuebyte2 = 0;
-
-int clutchValue = 0;
-int clutchValuebyte1 = 0;
-int clutchValuebyte2 = 0;
-
+// === Joystick Object ===
 Joystick_ Joystick;
 
-// init joystick libary
+// === Setup ===
 void setup() {
   Joystick.begin();
-  
-  // setto il range per l'acceleratore 
-  // (e' stato installato un fine corsa meccanico per ridurre la corsa del pedale quindi il max è ridotto di 5)
-  Joystick.setThrottleRange(76, 345);
-  // brake range
-  Joystick.setYAxisRange(105, 1010);
-  // clutch range
-  Joystick.setZAxisRange(115, 670);
+
+  // Define custom analog input ranges
+  // (calibrated manually to match mechanical limits)
+  Joystick.setThrottleRange(76, 345);  // gas (reduced max due to physical stop)
+  Joystick.setYAxisRange(105, 1010);   // brake
+  Joystick.setZAxisRange(115, 670);    // clutch
 }
 
+// === Helper Function ===
+int readPedal(int pin) {
+  int value = analogRead(pin);
+  return value < 1 ? 0 : value;
+}
+
+// === Main Loop ===
 void loop() {
-  
-  // Gas
-  gasValue = analogRead(gas);
-  
-  if (gasValue >= 1) {
-  gasValuebyte = gasValue / 4 ;
-   }
-   else
-   {
-    gasValuebyte = 0 ;
-   }
+  // Read and send gas pedal value
+  int gasValue = readPedal(PIN_GAS);
   Joystick.setThrottle(gasValue);
-  delay(50); 
+  delay(50);
 
-  // Brake
-  brakeValue = analogRead(brake);
-  
-  if (brakeValue >= 1) {
-    brakeValuebyte1 = brakeValue / 4;
-    brakeValuebyte2 = brakeValuebyte1 - 127;
-  
-   }
-   else
-   {
-    brakeValuebyte2 = -127;
-   }
+  // Read and send brake pedal value
+  int brakeValue = readPedal(PIN_BRAKE);
   Joystick.setYAxis(brakeValue);
-  delay(50); 
+  delay(50);
 
-  // Clutch
-  clutchValue = analogRead(clutch);
-  
-  if (clutchValue >= 1) {
-  clutchValuebyte1 = clutchValue / 4;
-  clutchValuebyte2 = clutchValuebyte1 - 127;
-  
-   }
-   else
-   {
-    clutchValuebyte2 = -127;
-   }
-   Joystick.setZAxis(clutchValue);
-  delay(50); 
+  // Read and send clutch pedal value
+  int clutchValue = readPedal(PIN_CLUTCH);
+  Joystick.setZAxis(clutchValue);
+  delay(50);
 }
